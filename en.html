@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="description" content="3D Indoor Mapping System based on Gaussian Splatting">
+  <meta name="keywords" content="3D reconstruction,Gaussian Splatting,semantic understanding,open-vocabulary query,scene editing">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>3D Indoor Mapping System based on Gaussian Splatting</title>
+
+  <meta property="og:image" content="media/thumbnail.png">
+  <link rel="icon" href="media/icon.png" type="image/jpeg">
+
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+    :root {
+        --primary-color: #4361ee;
+        --light-bg: #f8f9fa;
+        --dark-text: #212529;
+    }
+
+    /* Global layout adjustment: Use Flexbox to push footer to bottom */
+    html, body {
+        height: 100%; /* Ensure html and body take full viewport height */
+        margin: 0; /* Remove default margins */
+        padding: 0; /* Remove default padding */
+    }
+
+    body {
+        display: flex;
+        flex-direction: column; /* Make body a flex container with vertical layout */
+    }
+
+    /* Main content area grows flexibly to push footer down */
+    section {
+        flex-grow: 1; /* Allow section to grow and fill available space */
+        flex-shrink: 0; /* Prevent section from shrinking */
+        padding: 1.5rem 1.5rem; /* General section padding, adjustable as needed */
+    }
+
+    /* Special treatment for hero section to prevent growth */
+    .hero.compact-hero {
+        flex-grow: 0;
+    }
+
+    /* Compact hero section optimization */
+    .compact-hero {
+        padding: 1rem 1rem 0.2rem !important; /* top left/right bottom */
+        margin-bottom: 0 !important;
+    }
+
+    /* Button container optimization */
+    .compact-buttons {
+        margin-top: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    /* Single button optimization */
+    .compact-button {
+        margin: 0.2rem;
+        padding: 0.4rem 0.8rem;
+    }
+
+    .compact-title {
+        color: #333;
+        margin-bottom: 0.5rem;
+    }
+
+    .compact-author {
+        color: #555;
+        margin-bottom: 0.3rem;
+    }
+
+    .compact-affiliation {
+        color: #555;
+        margin-bottom: 0.8rem;
+    }
+
+    /* Contact section optimization */
+    .contact-section {
+        padding: 1rem 1.5rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+
+    .contact-buttons {
+        display: flex;
+        flex-direction: row; /* Ensure horizontal layout */
+        align-items: center;
+        justify-content: center; /* Center button group horizontally */
+        gap: 1rem; /* Spacing between buttons */
+        margin-top: 1.2rem;
+    }
+
+    .contact-button {
+        width: auto;
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+    }
+
+    /* System overview section optimization */
+    .section.overview-section {
+        padding-top: 0.5rem !important;
+        padding-bottom: 2rem !important; /* Adjustable as needed */
+        margin-top: 0 !important;
+    }
+
+    .result-card {
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        margin-bottom: 0.8rem; /* Reduce space between cards */
+        padding: 1.0rem; /* Adjust inner padding for more compact cards */
+    }
+
+    .language-switcher {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: rgba(255,255,255,0.9);
+        padding: 0.3rem 0.5rem;
+        border-radius: 4px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .language-switcher .divider {
+        color: #999;
+        font-weight: normal;
+    }
+
+    .language-switcher .button {
+        background: transparent;
+        border: none;
+        color: #333;
+        font-size: 0.8rem;
+        padding: 0.3rem 0.6rem;
+        height: auto;
+    }
+
+    .language-switcher .button.is-static {
+        background: #f5f5f5;
+    }
+
+    .language-switcher .button:hover {
+        background: #f0f0f0;
+    }
+
+    /* Override default hero-body padding */
+    .hero.is-white .hero-body {
+        padding: 1rem 1.5rem 0.5rem !important;
+    }
+
+    /* Further compress title section */
+    .compact-hero {
+        padding: 0 !important;
+    }
+
+    @media screen and (max-width: 768px) {
+        .section {
+            padding: 2rem 1rem;
+        }
+    }
+
+    /* Image styles */
+    .result-image {
+        max-width: 70%;
+        height: auto;
+        display: block;
+        margin: 0 auto;
+        object-fit: contain;
+    }
+
+    .four-in-a-row-image {
+        max-width: 100%;
+        height: auto;
+        display: block;
+        margin: 0 auto;
+        object-fit: contain;
+    }
+
+    /* Centered video container style */
+    .video-centered-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        padding-top: 1rem; /* Space above video */
+        padding-bottom: 1rem; /* Space below video */
+    }
+
+    .result-video {
+        max-width: 100%;
+        height: auto;
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    /* Limit max height if needed */
+    .image-container {
+        max-height: 400px; /* Adjust as needed */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+    }
+
+    /* Footer style optimization */
+    .footer {
+        flex-shrink: 0; /* Prevent footer from shrinking, ensure it stays at bottom */
+        padding: 0.5rem 1.0rem !important;
+        margin-top: 0 !important;
+        background-color: #f8f9fa;
+    }
+
+    .footer .content {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 0.5rem 0;
+    }
+
+    .footer p {
+        font-size: 0.85rem;
+        margin: 0.2rem 0;
+        color: #666;
+    }
+
+    /* Italic font size adjustment */
+    p.is-italic {
+        font-size: 0.95rem; /* Slightly smaller font */
+        line-height: 1.4;
+        margin-top: 0.5rem;
+    }
+
+    /* Table style optimization */
+    .metric-table {
+        margin-left: auto;
+        margin-right: auto;
+        margin-bottom: 1.5rem; /* Space below table */
+        width: 100%; /* Ensure table width */
+    }
+
+    /* Bulma table default styles, ensure full width and borders */
+    .table.is-fullwidth {
+        width: 100%;
+    }
+    .table.is-bordered th, .table.is-bordered td {
+        border: 1px solid #dbdbdb;
+    }
+    .table.is-striped tbody tr:nth-child(even) {
+        background-color: #f5f5f5;
+    }
+    .table.is-hoverable tbody tr:not(.is-selected):hover {
+        background-color: #fafafa;
+    }
+    .table th, .table td {
+        padding: 0.75em 0.75em;
+        vertical-align: middle;
+    }
+    .table th {
+        text-align: center;
+    }
+</style>
+</head>
+<body>
+
+<!-- Language switcher -->
+<div class="language-switcher">
+  <a href="index.html" class="button is-small">中文</a>
+  <span class="divider">|</span>
+  <span class="button is-small is-static">English</span>
+</div>
+
+<!-- Compact title section -->
+<section class="hero is-white compact-hero">
+  <div class="hero-body">
+    <div class="container">
+      <div class="columns is-centered">
+        <div class="column is-8 has-text-centered">
+          <h1 class="title is-2 compact-title">3D Indoor Mapping System based on Gaussian Splatting</h1>
+          <div class="is-size-5 publication-authors compact-author">
+            <a target="_blank" href="https://github.com/Laura-Ting">Ting Li</a>
+          </div>
+          <div class="is-size-5 compact-affiliation">
+            Harbin Institute of Technology (Weihai)
+          </div>
+          <!-- <div class="buttons is-centered compact-buttons">
+            <a href="project.pdf" class="button is-light is-small compact-button">
+              <span class="icon"><i class="fas fa-file-pdf"></i></span>
+              <span>Project Paper</span>
+            </a>
+            <a href="https://github.com/your-repo" class="button is-light is-small compact-button">
+              <span class="icon"><i class="fab fa-github"></i></span>
+              <span>Code</span>
+            </a>
+          </div> -->
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- System Overview -->
+<section class="section" style="padding-top: 2rem; padding-bottom: 2rem;">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-10">
+        <h2 class="title is-3 has-text-centered mb-3">System Overview</h2>
+        <div class="content has-text-justified" id="overview-content">
+          <p class="mb-4">
+            This project proposes a 3D indoor mapping system based on Gaussian Splatting for simulated environments, capable of generating high-fidelity 3D representations with rich semantic information from RGB-D data streams and pose information, while supporting open-vocabulary queries and scene editing functions.
+          </p>
+
+          <!-- System architecture diagram -->
+          <div class="has-text-centered mb-5">
+            <img src="media/en/system-overview.png" class="result-image" alt="System Architecture" style="max-width: 80%;">
+            <p class="is-italic has-text-centered mt-2">System architecture overview</p>
+          </div>
+          
+          <h4 class="title is-5 mb-3">Core Modules</h4>
+          <div class="columns">
+            <div class="column is-6">
+              <div class="box">
+                <h5 class="title is-6 mb-2">1. Incremental Scene Reconstruction</h5>
+                <p>Real-time processing of RGB-D input streams, incremental addition of 3D Gaussian primitives, achieving real-time reconstruction performance of 30 FPS.</p>
+              </div>
+            </div>
+            <div class="column is-6">
+              <div class="box">
+                <h5 class="title is-6 mb-2">2. High-Precision Scene Refinement</h5>
+                <p>Offline optimization introduces 2D surfel representation and depth constraints, improving reconstruction accuracy to sub-centimeter level with PSNR up to 39dB.</p>
+              </div>
+            </div>
+          </div>
+          <div class="columns mt-3">
+            <div class="column is-6">
+              <div class="box">
+                <h5 class="title is-6 mb-2">3. Semantic Fusion and Embedding</h5>
+                <p>The joint architecture visual-language model is adopted to achieve open lexical semantic understanding and support fine-grained object attribute recognition.</p>
+              </div>
+            </div>
+            <div class="column is-6">
+              <div class="box">
+                <h5 class="title is-6 mb-2">4. Open-Vocabulary Query & Scene Editing</h5>
+                <p>Support natural language interactive query and provide editing functions such as object movement, color change, and deletion, maintaining consistency between geometry and semantics.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" style="padding-top: 2rem; padding-bottom: 2rem; background-color: #f8f9fa;">
+    <div class="container">
+        <div class="columns is-centered">
+            <div class="column is-10">
+                <h2 class="title is-3 has-text-centered mb-3">System Interface</h2>
+                <div class="content has-text-justified">
+                    <p class="mb-4">
+                        Our system provides an intuitive user interface that supports real-time viewing of reconstruction results, semantic queries, and scene editing operations.
+                        Below is an overview of the system interface.
+                    </p>
+
+                    <div class="has-text-centered mb-5">
+                        <img src="media/cn/system-interface.png" class="result-image" alt="System Interface" style="max-width: 90%;">
+                        <p class="is-italic has-text-centered mt-2">System interface overview</p>
+                    </div>
+
+                    <p class="mb-4">
+                        Users can select different functional modules through the left panel and observe operation effects in the main view.
+                        The right panel provides detailed parameter settings and result display.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Experimental Results -->
+<section class="section" style="background-color: #f8f9fa;">
+  <div class="container">
+    <div class="columns is-centered">
+    <div class="column is-10">  <!-- Added is-10 to limit width -->
+    <h2 class="title is-3 has-text-centered mb-6">Experimental Results</h2>
+    
+    <!-- Reconstruction Quality Evaluation -->
+    <div class="result-card">
+      <h3 class="title is-4">Incremental Scene Reconstruction Quality</h3>
+      <div class="content">
+        <p>
+          The online reconstruction module achieves 27.61dB PSNR and 1.70cm depth L1 error. The figure below shows the reconstruction quality changes over frame sequences using the Gibson Denmark scene as an example.
+        </p>
+        <div class="columns">
+          <div class="column is-6">
+            <div class="image-container">
+              <img src="media/common/online-render-rgb.png" class="result-image" alt="Online reconstruction RGB">
+            </div>
+            <p class="is-italic has-text-centered">Online reconstruction RGB</p>
+          </div>
+          <div class="column is-6">
+            <div class="image-container">
+              <img src="media/common/online-render-depth.png" class="result-image" alt="Online reconstruction depth">
+            </div>
+            <p class="is-italic has-text-centered">Online reconstruction depth</p>
+          </div>
+        </div>
+<div class="columns mt-3">
+  <!-- PSNR metric -->
+  <div class="column is-3">
+    <img src="media/common/online-metric-psnr.png" class="four-in-a-row-image" alt="PSNR metric">
+    <p class="is-italic has-text-centered">PSNR per-frame evaluation</p>
+  </div>
+  
+  <!-- SSIM metric -->
+  <div class="column is-3">
+    <img src="media/common/online-metric-ssim.png" class="four-in-a-row-image" alt="SSIM metric">
+    <p class="is-italic has-text-centered">SSIM per-frame evaluation</p>
+  </div>
+  
+  <!-- LPIPS metric -->
+  <div class="column is-3">
+    <img src="media/common/online-metric-lpips.png" class="four-in-a-row-image" alt="LPIPS metric">
+    <p class="is-italic has-text-centered">LPIPS per-frame evaluation</p>
+  </div>
+  
+  <!-- Depth metric -->
+  <div class="column is-3">
+    <img src="media/common/online-metric-depthl1.png" class="four-in-a-row-image" alt="Depth metric">
+    <p class="is-italic has-text-centered">Depth L1 per-frame evaluation</p>
+  </div>
+  </div>
+  <b>Online average metrics</b>
+        <table class="metric-table">
+          <thead>
+            <tr>
+              <th>Metric</th>
+              <th>Training Set</th>
+              <th>Test Set</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>PSNR (dB)</td>
+              <td>25.28</td>
+              <td>21.72</td>
+            </tr>
+            <tr>
+              <td>Depth L1 (cm)</td>
+              <td>1.91</td>
+              <td>9.01</td>
+            </tr>
+            <tr>
+              <td>MS-SSIM</td>
+              <td>0.83</td>
+              <td>0.76</td>
+            </tr>
+            <tr>
+              <td>LPIPS</td>
+              <td>0.22</td>
+              <td>0.29</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+    <!-- High-Precision Scene Refinement -->
+    <div class="result-card">
+      <h3 class="title is-4">High-Precision Scene Refinement Results</h3>
+      <div class="content">
+        <p>
+          2D surfel representation outperforms 3D ellipsoid representation. Results from the Gibson Denmark scene show depth constraints reduce depth L1 error from 4.49cm to 0.77cm, improving PSNR to 39dB on training set and over 27dB on test set.
+        </p>
+        <div class="columns">
+          <div class="column is-6">
+            <img src="media/common/offline-render-rgb.png" class="result-image" alt="Offline optimized RGB">
+            <p class="is-italic has-text-centered">2DGS depth-constrained offline optimized RGB</p>
+          </div>
+          <div class="column is-6">
+            <img src="media/common/offline-render-depth.png" class="result-image" alt="Offline optimized depth">
+            <p class="is-italic has-text-centered">2DGS depth-constrained offline optimized depth</p>
+          </div>
+        </div>
+        <div class="columns mt-3">
+          <!-- PSNR metric -->
+          <div class="column is-3">
+            <img src="media/common/offline-metric-psnr.png" class="four-in-a-row-image" alt="Offline PSNR metric">
+            <p class="is-italic has-text-centered">Offline PSNR comparison</p>
+          </div>
+          
+          <!-- SSIM metric -->
+          <div class="column is-3">
+            <img src="media/common/offline-metric-ssim.png" class="four-in-a-row-image" alt="Offline SSIM metric">
+            <p class="is-italic has-text-centered">Offline SSIM comparison</p>
+          </div>
+          
+          <!-- LPIPS metric -->
+          <div class="column is-3">
+            <img src="media/common/offline-metric-lpips.png" class="four-in-a-row-image" alt="Offline LPIPS metric">
+            <p class="is-italic has-text-centered">Offline LPIPS comparison</p>
+          </div>
+          
+          <!-- Depth metric -->
+          <div class="column is-3">
+            <img src="media/common/offline-metric-depthl1.png" class="four-in-a-row-image" alt="Offline Depth metric">
+            <p class="is-italic has-text-centered">Offline depth L1 comparison</p>
+          </div>
+        </div>
+        <img src="media/cn/colobar-cn.png" alt="Color mapping">
+  <b>Metrics comparison of different strategies</b>
+  <div class="table-container">
+    <table class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth">
+      <thead>
+        <tr>
+          <th rowspan="2">Method</th>
+          <th rowspan="2">Initialization</th>
+          <th rowspan="2">Iteration</th>
+          <th rowspan="2">Split</th>
+          <th colspan="4">Metrics</th>
+        </tr>
+        <tr>
+          <th>Depth(cm)</th>
+          <th>PSNR</th>
+          <th>SSIM</th>
+          <th>LPIPS</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Online method -->
+        <tr>
+          <td rowspan="2">Online</td>
+          <td rowspan="2">-</td>
+          <td rowspan="2">-</td>
+          <td>Train Set</td>
+          <td>1.91</td>
+          <td>25.28</td>
+          <td>0.83</td>
+          <td>0.22</td>
+        </tr>
+        <tr>
+          <td>Test Set</td>
+          <td>9.01</td>
+          <td>21.72</td>
+          <td>0.76</td>
+          <td>0.29</td>
+        </tr>
+        
+        <!-- Offline 2D method -->
+        <tr>
+          <td rowspan="6">Offline 2D</td>
+          <td rowspan="6">Point Cloud</td>
+          <td rowspan="2">0 Iter</td>
+          <td>Train Set</td>
+          <td>71.77</td>
+          <td>11.92</td>
+          <td>0.44</td>
+          <td>0.51</td>
+        </tr>
+        <tr>
+          <td>Test Set</td>
+          <td>66.41</td>
+          <td>11.91</td>
+          <td>0.45</td>
+          <td>0.51</td>
+        </tr>
+        <tr>
+          <td rowspan="2">No Depth Constraint</td>
+          <td>Train Set</td>
+          <td>3.94</td>
+          <td>38.84</td>
+          <td>0.99</td>
+          <td>0.04</td>
+        </tr>
+        <tr>
+          <td>Test Set</td>
+          <td>10.10</td>
+          <td>27.13</td>
+          <td>0.88</td>
+          <td>0.18</td>
+        </tr>
+        <tr>
+          <td rowspan="2">With Depth Constraint</td>
+          <td>Train Set</td>
+          <td>0.80</td>
+          <td>38.90</td>
+          <td>0.99</td>
+          <td>0.04</td>
+        </tr>
+        <tr>
+          <td>Test Set</td>
+          <td>7.56</td>
+          <td>27.58</td>
+          <td>0.88</td>
+          <td>0.17</td>
+        </tr>
+        
+        <!-- Offline 3D method - Point Cloud -->
+        <tr>
+          <td rowspan="12">Offline 3D</td>
+          <td rowspan="6">Point Cloud</td>
+          <td rowspan="2">0 Iter</td>
+          <td>Train Set</td>
+          <td>45.37</td>
+          <td>15.54</td>
+          <td>0.64</td>
+          <td>0.42</td>
+        </tr>
+        <tr>
+          <td>Test Set</td>
+          <td>44.95</td>
+          <td>15.01</td>
+          <td>0.62</td>
+          <td>0.43</td>
+        </tr>
+        <tr>
+          <td rowspan="2">No Depth Constraint</td>
+          <td>Train Set</td>
+          <td>4.49</td>
+          <td>39.10</td>
+          <td>0.98</td>
+          <td>0.03</td>
+        </tr>
+        <tr>
+          <td>Test Set</td>
+          <td>11.2</td>
+          <td>26.27</td>
+          <td>0.86</td>
+          <td>0.19</td>
+        </tr>
+        <tr>
+          <td rowspan="2">With Depth Constraint</td>
+          <td>Train Set</td>
+          <td>0.77</td>
+          <td>38.90</td>
+          <td>0.99</td>
+          <td>0.03</td>
+        </tr>
+        <tr>
+          <td>Test Set</td>
+          <td>7.81</td>
+          <td>26.87</td>
+          <td>0.88</td>
+          <td>0.17</td>
+        </tr>
+        
+        <!-- Offline 3D method - Gaussian -->
+        <tr>
+          <td rowspan="6">Gaussian</td>
+          <td rowspan="2">0 Iter</td>
+          <td>Train Set</td>
+          <td>1.91</td>
+          <td>25.28</td>
+          <td>0.83</td>
+          <td>0.22</td>
+        </tr>
+        <tr>
+          <td>Test Set</td>
+          <td>9.01</td>
+          <td>21.72</td>
+          <td>0.76</td>
+          <td>0.29</td>
+        </tr>
+        <tr>
+          <td rowspan="2">No Depth Constraint</td>
+          <td>Train Set</td>
+          <td>5.87</td>
+          <td>39.15</td>
+          <td>0.99</td>
+          <td>0.03</td>
+        </tr>
+        <tr>
+          <td>Test Set</td>
+          <td>12.73</td>
+          <td>26.37</td>
+          <td>0.88</td>
+          <td>0.19</td>
+        </tr>
+        <tr>
+          <td rowspan="2">With Depth Constraint</td>
+          <td>Train Set</td>
+          <td>0.75</td>
+          <td>39.01</td>
+          <td>0.99</td>
+          <td>0.03</td>
+        </tr>
+        <tr>
+          <td>Test Set</td>
+          <td>7.87</td>
+          <td>27.08</td>
+          <td>0.89</td>
+          <td>0.17</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+    <!-- Semantic Understanding Performance -->
+    <div class="result-card">
+      <h3 class="title is-4">Semantic Understanding Performance</h3>
+      <div class="content">
+        <p>
+          Joint training method achieves 39% Top-1 accuracy, significantly outperforming two-stage methods (19-27%), better maintaining semantic consistency and capturing fine-grained relationships.
+        </p>
+        <div class="columns">
+          <div class="column is-6">
+            <img src="media/common/semantic-openseg.png" class="result-image" alt="Semantic result 1">
+            <p class="is-italic has-text-centered">OpenSeg semantic results</p>
+          </div>
+          <div class="column is-6">
+            <img src="media/common/semantic-samclip.png" class="result-image" alt="Semantic result 2">
+            <p class="is-italic has-text-centered">SAM+CLIP semantic results</p>
+          </div>
+        </div>
+<table class="metric-table">
+          <thead>
+            <tr>
+              <th>Method</th>
+              <th>Network Type</th> <th>Top 1</th>
+              <th>Top 5</th>
+              <th>Top 10</th>
+              <th>Top 20</th>
+              <th>Top 50</th> </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>ConceptFusion</td>
+              <td>SAM+CLIP(Two-stage)</td> <td>19.03</td>
+              <td>35.78</td>
+              <td>40.91</td>
+              <td>47.15</td>
+              <td>54.95</td> </tr>
+            <tr>
+              <td>HOVSG</td>
+              <td>SAM+CLIP(Two-stage)</td> <td>26.62</td>
+              <td>52.62</td>
+              <td>62.23</td>
+              <td>68.48</td>
+              <td>77.28</td> </tr>
+            <tr>
+              <td>ProGround</td>
+              <td>Yolo-world(Joint)</td> <td>38.98</td>
+              <td>62.80</td>
+              <td>69.23</td>
+              <td>75.02</td>
+              <td>82.62</td> </tr>
+            <tr>
+              <td>OpenFusion</td>
+              <td>SEEM(Joint)</td> <td>38.90</td>
+              <td>57.05</td>
+              <td>62.75</td>
+              <td>67.27</td>
+              <td>74.80</td> </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+    <!-- Open-Vocabulary Query -->
+    <div class="result-card">
+      <h3 class="title is-4">Open-Vocabulary Query Results</h3>
+      <div class="content">
+        <p>
+          Common word queries: The system can accurately respond to queries for common objects like "bed" and "sofa".
+        </p>
+        <div class="columns">
+          <div class="column is-3"> <img src="media/common/query-bed.png" class="four-in-a-row-image" alt="Query result 1">
+            <p class="is-italic has-text-centered">Query "bed" result</p>
+          </div>
+          <div class="column is-3"> <img src="media/common/query-sofa.png" class="four-in-a-row-image" alt="Query result 2">
+            <p class="is-italic has-text-centered">Query "sofa" result</p>
+          </div>
+          <div class="column is-3"> <img src="media/common/query-pillow.png" class="four-in-a-row-image" alt="Query result 3">
+            <p class="is-italic has-text-centered">Query "pillow" result</p>
+          </div>
+          <div class="column is-3"> <img src="media/common/query-toilet.png" class="four-in-a-row-image" alt="Query result 4">
+            <p class="is-italic has-text-centered">Query "toilet" result</p>
+          </div>
+        </div>
+        <p>
+          Synonym queries: The system can understand synonymous expressions like "television" and "tv", demonstrating semantic understanding capabilities beyond predefined categories.
+        </p>
+        <div class="columns">
+          <div class="column is-3"> <img src="media/common/query-tv.png" class="four-in-a-row-image" alt="Query result 1">
+            <p class="is-italic has-text-centered">Query "tv" result</p>
+          </div>
+          <div class="column is-3"> <img src="media/common/query-television.png" class="four-in-a-row-image" alt="Query result 2">
+            <p class="is-italic has-text-centered">Query "television" result</p>
+          </div>
+          <div class="column is-3"> <img src="media/common/query-refrigerator.png" class="four-in-a-row-image" alt="Query result 3">
+            <p class="is-italic has-text-centered">Query "refrigerator" result</p>
+          </div>
+          <div class="column is-3"> <img src="media/common/query-fridge.png" class="four-in-a-row-image" alt="Query result 4">
+            <p class="is-italic has-text-centered">Query "fridge" result</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+<div class="result-card">
+      <h3 class="title is-4">Scene Editing</h3>
+      <div class="content">
+        <p>
+          The system supports fine-grained editing of Gaussian points in 3D scenes, including color modification, object removal, position movement, and Gaussian size adjustment.
+        </p>
+        <div class="columns">
+          <div class="column is-3">
+            <img src="media/common/scene-edit-color.png" class="four-in-a-row-image" alt="Scene edit: color change">
+            <p class="is-italic has-text-centered">Color modification</p>
+          </div>
+          <div class="column is-3">
+            <img src="media/common/scene-edit-remove.png" class="four-in-a-row-image" alt="Scene edit: object removal">
+            <p class="is-italic has-text-centered">Object removal</p>
+          </div>
+          <div class="column is-3">
+            <img src="media/common/scene-edit-move.png" class="four-in-a-row-image" alt="Scene edit: position movement">
+            <p class="is-italic has-text-centered">Position movement</p>
+          </div>
+          <div class="column is-3">
+            <img src="media/common/scene-edit-scale.png" class="four-in-a-row-image" alt="Scene edit: Gaussian size adjustment">
+            <p class="is-italic has-text-centered">Gaussian size adjustment</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" style="padding-top: 2rem; padding-bottom: 2rem;">
+    <div class="container">
+        <div class="columns is-centered">
+            <div class="column is-10">
+                <h2 class="title is-3 has-text-centered mb-3">Acknowledgements</h2>
+                <div class="content has-text-justified">
+                    <p class="mb-4">
+                        The development and implementation of this project refer to the following excellent open source projects, for which we express our sincere gratitude:
+                    </p>
+                    <ul class="acknowledgements-list">
+                        <li>
+                            <a href="https://github.com/spla-tam/SplaTAM" target="_blank" rel="noopener noreferrer">
+                                SplaTAM
+                            </a>: A real-time dense RGB-D SLAM system based on 3D Gaussian representation
+                        </li>
+                        <li>
+                            <a href="https://github.com/graphdeco-inria/gaussian-splatting" target="_blank" rel="noopener noreferrer">
+                                3D Gaussian Splatting
+                            </a>: A real-time radiance field rendering system based on 3D Gaussian representation
+                        </li>
+                        <li>
+                            <a href="https://github.com/hbb1/2d-gaussian-splatting" target="_blank" rel="noopener noreferrer">
+                                2D Gaussian Splatting
+                            </a>: A geometric-accurate radiance field rendering system based on 2D Gaussian representation
+                        </li>
+                        <li>
+                            <a href="https://github.com/sharinka0715/semantic-gaussians" target="_blank" rel="noopener noreferrer">
+                                Semantic-Gaussian
+                            </a>: An open vocabulary scene understanding system based on 3D Gaussian representation
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 优化后的联系方式 - 水平排列按钮 -->
+<section class="section contact-section">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-6 has-text-centered">
+        <h2 class="title is-4 mb-3">Contact</h2>
+        <p class="mb-3">For any questions or suggestions, please contact me via:</p>
+        <div class="contact-buttons" style="flex-direction: row; justify-content: center; gap: 1rem;">
+          <a href="mailto:ting2025.li@tum.de" class="button is-primary is-outlined contact-button">
+            <span class="icon"><i class="fas fa-envelope"></i></span>
+            <span>ting2025.li@tum.de</span>
+          </a>
+          <a href="https://github.com/Laura-Ting" class="button is-primary is-outlined contact-button">
+            <span class="icon"><i class="fab fa-github"></i></span>
+            <span>github.com/Laura-Ting</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="content has-text-centered">
+    <p>© 2025 3D Indoor Mapping System based on Gaussian Splatting. All rights reserved.</p>
+  </div>
+</footer>
+
+</body>
+</html>
+
+<!-- JavaScript -->
+<script>
+</script>
+</body>
+</html>
